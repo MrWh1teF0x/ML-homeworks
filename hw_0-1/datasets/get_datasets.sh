@@ -1,6 +1,9 @@
-if [ ! -d "cifar-10-batches-py" ]; then
-  wget http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz -O cifar-10-python.tar.gz
-  tar -xzvf cifar-10-python.tar.gz
-  rm cifar-10-python.tar.gz
-  
-fi
+#!/bin/bash
+
+curl -O https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
+
+# Распаковка
+tar -xzf cifar-10-python.tar.gz
+
+# Удаление архива
+rm cifar-10-python.tar.gz
