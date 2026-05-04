@@ -7,12 +7,12 @@ from .layer_utils import *
 
 class ThreeLayerConvNet(object):
     """
-    трехслойная сверточная сеть с архитектурой:
-    conv - relu - 2x2 max pool - linear - relu - linear - softmax
+        трехслойная сверточная сеть с архитектурой:
+        conv - relu - 2x2 max pool - linear - relu - linear - softmax
 
-    Сеть работает с пакетами данных формой (N, C, H, W),
-состоящими из N изображений, каждое высотой H и шириной W и с C входными
-каналами.
+        Сеть работает с пакетами данных формой (N, C, H, W),
+    состоящими из N изображений, каждое высотой H и шириной W и с C входными
+    каналами.
     """
 
     def __init__(
@@ -51,16 +51,36 @@ class ThreeLayerConvNet(object):
         # словаре self.params. Сохраняйте веса и смещения для сверточного
         # слоя, используя ключи 'W1' и 'b1'; используйте ключи 'W2' и 'b2' для
         # весов и смещений скрытого слоя, и ключи 'W3' и 'b3'
-        # для весов и смещений выходного слоя. 
+        # для весов и смещений выходного слоя.
         # #
         # ВАЖНО: паддинг и страйды
         # первого сверточного слоя выбраны таким образом, чтобы #
-        # **ширина и высота входных данных сохранялись**. Взгляните на 
+        # **ширина и высота входных данных сохранялись**. Взгляните на
         # начало функции loss() #
         ############################################################################
-        F, (C, H, W) = num_filters, input_dim # dim size
-        self.params.update({ #...
-                            })
+
+        F, (C, H, W) = num_filters, input_dim
+
+        HH = filter_size
+        WW = filter_size
+
+        self.params["W1"] = weight_scale * np.random.randn(F, C, HH, WW)
+        self.params["b1"] = np.zeros(F)
+
+        pool_height = 2
+        pool_width = 2
+        stride = 2
+
+        H_after_pool = (H - pool_height) // stride + 1
+        W_after_pool = (W - pool_width) // stride + 1
+
+        fc_input_dim = F * H_after_pool * W_after_pool
+        self.params["W2"] = weight_scale * np.random.randn(fc_input_dim, hidden_dim)
+        self.params["b2"] = np.zeros(hidden_dim)
+
+        self.params["W3"] = weight_scale * np.random.randn(hidden_dim, num_classes)
+        self.params["b3"] = np.zeros(num_classes)
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -94,8 +114,17 @@ class ThreeLayerConvNet(object):
         # #
         # вы можете использовать функции, определенные в classifiesr/layers.py и #
         # classifiers/layer_utils.py. #
-        ############################################################################
-        # 
+        ##########################################################################
+
+        out, cache1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+
+        N, F, H_out, W_out = out.shape
+        out_flat = out.reshape(N, -1)
+
+        out2, cache2 = affine_relu_forward(out_flat, W2, b2)
+
+        scores, cache3 = affine_forward(out2, W3, b3)
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -112,10 +141,25 @@ class ThreeLayerConvNet(object):
         # #
         # ПРИМЕЧАНИЕ:  L2-регуляризация включает множитель #
         # равный 0,5 для упрощения выражения для градиента. #
-        ############################################################################
-        # loss, dout = softmax_loss(scores, y)                                     # loss and dout
-        # loss += 0.5 * self.reg * (np.sum(W1**2) + np.sum(W2**2) + np.sum(W3**2)) # regularized loss
-        # ...
+        ##########################################################################
+
+        loss, dout = softmax_loss(scores, y)
+        loss += 0.5 * self.reg * (np.sum(W1**2) + np.sum(W2**2) + np.sum(W3**2))
+
+        dout2, dw3, db3 = affine_backward(dout, cache3)
+        grads["W3"] = dw3 + self.reg * W3
+        grads["b3"] = db3
+
+        dout_flat, dw2, db2 = affine_relu_backward(dout2, cache2)
+        grads["W2"] = dw2 + self.reg * W2
+        grads["b2"] = db2
+
+        dout_reshaped = dout_flat.reshape(N, F, H_out, W_out)
+
+        dx, dw1, db1 = conv_relu_pool_backward(dout_reshaped, cache1)
+        grads["W1"] = dw1 + self.reg * W1
+        grads["b1"] = db1
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################

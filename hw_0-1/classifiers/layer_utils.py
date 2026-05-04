@@ -17,9 +17,10 @@ def affine_relu_forward(x, w, b):
     cache = (fc_cache, relu_cache)
     return out, cache
 
+
 def affine_relu_backward(dout, cache):
     """
-    Обратный проход affine-relu 
+    Обратный проход affine-relu
     """
     fc_cache, relu_cache = cache
     da = relu_backward(dout, relu_cache)
@@ -55,7 +56,7 @@ def conv_relu_backward(dout, cache):
 
 
 def conv_bn_relu_forward(x, w, b, gamma, beta, conv_param, bn_param):
-    a, conv_cache = conv_forward_fast(x, w, b, conv_param)
+    a, conv_cache = conv_forward_fast(x, w, b, conv_param)  # Не стал писать эту функцию
     an, bn_cache = spatial_batchnorm_forward(a, gamma, beta, bn_param)
     out, relu_cache = relu_forward(an)
     cache = (conv_cache, bn_cache, relu_cache)
